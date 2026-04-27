@@ -35,8 +35,31 @@ if (!window._flutter) {
 }
 _flutter.buildConfig = {"engineRevision":"327ed814500baca0480a02f8555aa84a9afe32bf","builds":[{"compileTarget":"dart2js","renderer":"canvaskit","mainJsPath":"main.dart.js"},{}]};
 
-_flutter.loader.load({
-  serviceWorkerSettings: {
-    serviceWorkerVersion: "1140882922" /* Flutter's service worker is deprecated and will be removed in a future Flutter release. */
+const SW_VERSION = '20260427-2';
+const registerServiceWorker = () => {
+  navigator.serviceWorker.register(`flutter_service_worker.js?v=${SW_VERSION}`).catch((error) => {
+    console.warn('Service worker registration failed:', error);
+  });
+};
+
+if ('serviceWorker' in navigator) {
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(registerServiceWorker, { timeout: 3000 });
+  } else {
+    window.addEventListener('load', () => {
+      setTimeout(registerServiceWorker, 0);
+    }, { once: true });
   }
+}
+
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+_flutter.loader.load({
+  config: {
+    useLocalCanvasKit: true,
+    canvasKitBaseUrl: 'canvaskit/',
+    canvasKitMaximumSurfaces: isIOS ? 1 : 2,
+    canvasKitVariant: isIOS ? 'full' : 'auto',
+  },
 });
